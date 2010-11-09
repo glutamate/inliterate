@@ -1,0 +1,13 @@
+hello world!
+
+> module Foo where
+
+let's see if we can define a function
+
+> f x = x+1
+
+and the calculate something
+
+=> f 4
+
+thats all folks
