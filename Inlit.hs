@@ -46,3 +46,6 @@ main = do
 -- prettyPrint $ addImport impUnsafe $ onDecls transform mmod
 
  
+--todo: create pandoc
+--inlitp for modules
+--query type class
