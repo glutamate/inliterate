@@ -10,6 +10,8 @@ modDecls f (Module _ _ _ _ _ _ decls) = f decls
 
 onDecls f (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 v6 $ f decls
 
+setModuleName s (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 (ModuleName s) v3 v4 v5 v6 decls
+
 
 addImport m (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 (v6++[m]) decls
 
@@ -39,17 +41,22 @@ addMain decls =
     in decls++[themain]
 
 
-chomp (' ':s) = chomp s
-chomp s = s
+chomp (' ':s) =  s
  
+withEq s = init (show $ chomp s)++"\\n  =>  \""
 
-splitInlit :: [String] -> [String]
+
+splitInlit :: [String] -> ([String],[String])
 splitInlit = sI [] [] where
-  sI tl mn [] = reverse tl ++ 
-                ["main = do"] ++
-                reverse (map ("   "++) mn)
+  sI tl mn [] = (reverse tl,
+                 reverse  mn)
   sI tl mn (('>':'>':ln):lns) = sI (chomp ln:tl) mn lns
   sI tl mn (('>':ln):lns) = sI (chomp ln:tl) (("putStrLn "++show (chomp ln)):mn) lns
-  sI tl mn (('=':'>':ln):lns) = sI tl (("print ("++chomp ln++")"):mn) lns
+  sI tl mn (('=':'>':ln):lns) = sI tl (("putStrLn $ "++withEq ln++"++show ("++chomp ln++")"):mn) lns
   sI tl mn (ln:lns) = sI tl (("putStrLn "++show ln):mn) lns
-  
+
+
+inoutxform = filter (not . isSink) . addMain . map transSrc   
+
+inxform = filter (not . isSink) . map transSrc   
+

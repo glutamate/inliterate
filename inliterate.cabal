@@ -19,5 +19,5 @@ Executable inoutproc
 Executable inlit
 --   Hs-source-dirs:   prog
    Main-Is:          Inlit.hs
-   Build-depends:    haskell-src-exts, pretty, base>=4
+   Build-depends:    haskell-src-exts, pretty, base>=4, process
    other-modules:    InOut

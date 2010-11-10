@@ -1,13 +1,22 @@
 hello world!
 
+>> {-# LANGUAGE GADTs #-}
+>> {-# OPTIONS_GHC -O2 #-}
 > module Foo where
 
 let's see if we can define a function
 
-> f x = x+1
+> long_variable = 5
+> f x = x+1+ long_variable + long_variable + long_variable + long_variable + long_variable + long_variable + long_variable 
 
-and the calculate something
+> fl <* readFile "inliterate.cabal"
+
+and then calculate something
 
 => f 4
+
+=> f (1+1+1+1+1+1)
+
+=> fl
 
 thats all folks
