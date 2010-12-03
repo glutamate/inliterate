@@ -5,6 +5,8 @@ import Language.Haskell.Exts
 import Data.Maybe
 import System.Environment
 import Text.PrettyPrint
+--import System.IO.Unsafe
+
 
 modDecls f (Module _ _ _ _ _ _ decls) = f decls
 
@@ -16,6 +18,8 @@ setModuleName s (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 (ModuleName s) v3 
 addImport m (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 (v6++[m]) decls
 
 impUnsafe = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, importModule = ModuleName "System.IO.Unsafe", importQualified = True, importSrc = False, importPkg = Nothing, importAs = Just (ModuleName "SysIOUnface"), importSpecs = Nothing}
+
+impAsk = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, importModule = ModuleName "Ask", importQualified = True, importSrc = False, importPkg = Nothing, importAs = Just (ModuleName "Ask"), importSpecs = Nothing}
 
 maySink (SpliceDecl sloc (InfixApp (var)
  (QVarOp (UnQual (Symbol "*>"))) sink)) = Just (sloc, var,sink)
@@ -42,6 +46,7 @@ addMain decls =
 
 
 chomp (' ':s) =  s
+chomp s = s
  
 withEq s = init (show $ chomp s)++"\\n  =>  \""
 
@@ -52,11 +57,22 @@ splitInlit = sI [] [] where
                  reverse  mn)
   sI tl mn (('>':'>':ln):lns) = sI (chomp ln:tl) mn lns
   sI tl mn (('>':ln):lns) = sI (chomp ln:tl) (("putStrLn "++show (chomp ln)):mn) lns
-  sI tl mn (('=':'>':ln):lns) = sI tl (("putStrLn $ "++withEq ln++"++show ("++chomp ln++")"):mn) lns
+--  sI tl mn (('~':'>':ln):lns) = sI tl (("putStrLn $ "++withEq ln++"++show ("++chomp ln++")"):mn) lns
+  sI tl mn (ln@('=':'>':_):lns) = 
+      let (cmd',rest) = span isCmdOrComment lns
+          cmd = map (drop 2) $ ln:(filter isCmd cmd')
+          printIt = map (("putStrLn $ "++) . show . chomp) cmd
+          askIt = "Ask.ask $ \n"++ unlines (map (ind 3) cmd)
+      in sI tl (askIt:(reverse printIt++mn)) rest
   sI tl mn (ln:lns) = sI tl (("putStrLn "++show ln):mn) lns
-
+  isComment ('-':'-':_) = True
+  isComment s = False
+  isCmd ('=':'>':_) = True
+  isCmd s = False
+  isCmdOrComment s = isCmd s || isComment s
 
 inoutxform = filter (not . isSink) . addMain . map transSrc   
 
 inxform = filter (not . isSink) . map transSrc   
 
+ind n s = replicate n ' ' ++ s

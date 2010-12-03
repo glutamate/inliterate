@@ -8,6 +8,8 @@ Maintainer:          tanielsen@gmail.com
 build-type:          Simple
 Cabal-Version: 	     >= 1.2
 
+Library
+   Exposed-modules:  Ask
 
 Executable inoutproc
 --   Hs-source-dirs:   prog
@@ -21,3 +23,4 @@ Executable inlit
    Main-Is:          Inlit.hs
    Build-depends:    haskell-src-exts, pretty, base>=4, process
    other-modules:    InOut
+

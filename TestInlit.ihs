@@ -7,7 +7,11 @@ hello world!
 let's see if we can define a function
 
 > long_variable = 5
-> f x = x+1+ long_variable + long_variable + long_variable + long_variable + long_variable + long_variable + long_variable 
+
+> f :: Int -> Int
+
+> f x = x+1+ long_variable + long_variable + long_variable + 
+>       long_variable + long_variable + long_variable + long_variable 
 
 > fl <* readFile "inliterate.cabal"
 
@@ -16,6 +20,9 @@ and then calculate something
 => f 4
 
 => f (1+1+1+1+1+1)
+
+=> f 
+=>   (1+1+1+1+1+1)
 
 => fl
 

@@ -23,19 +23,21 @@ beforePeriod = takeWhile (/='.')
 pass = "{- INLIT_PASS -}"
 
 th = ">> {-# LANGUAGE TemplateHaskell #-}"
+nmr = ">> {-# LANGUAGE NoMonomorphismRestriction #-}"
+
 
 nl s = s++"\n"
 
 main = do
   (src:rest, opts) <- splitByHyphen `fmap` getArgs
-  (bd, mn) <- (splitInlit . (th:) . lines) `fmap` readFile src
+  (bd, mn) <- (splitInlit . (nmr:) . (th:) . lines) `fmap` readFile src
   --mmod <- fromParseResult `fmap` parseFile src
   --(print) $  mmod
   let out = case rest of 
               o:_ -> o
               [] -> beforePeriod src ++ ".hs"
   let codeIn = unlines $ bd ++ ["main = do"] ++ (map ("   "++) mn) 
-      codeOut = (nl pass++) $ prettyPrint $ addImport impUnsafe $ 
+      codeOut = (nl pass++) $ prettyPrint $ addImport impUnsafe $ addImport impAsk $
                 setModuleName "Main" $ onDecls inxform $ fromParseResult $ parseFileContents codeIn
   writeFile out codeOut
   let notMyOpts = opts \\ ["--make","--run"]
