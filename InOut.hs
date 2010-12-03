@@ -5,6 +5,7 @@ import Language.Haskell.Exts
 import Data.Maybe
 import System.Environment
 import Text.PrettyPrint
+import Data.List
 --import System.IO.Unsafe
 
 
@@ -56,20 +57,32 @@ splitInlit = sI [] [] where
   sI tl mn [] = (reverse tl,
                  reverse  mn)
   sI tl mn (('>':'>':ln):lns) = sI (chomp ln:tl) mn lns
-  sI tl mn (('>':ln):lns) = sI (chomp ln:tl) (("putStrLn "++show (chomp ln)):mn) lns
---  sI tl mn (('~':'>':ln):lns) = sI tl (("putStrLn $ "++withEq ln++"++show ("++chomp ln++")"):mn) lns
-  sI tl mn (ln@('=':'>':_):lns) = 
-      let (cmd',rest) = span isCmdOrComment lns
-          cmd = map (drop 2) $ ln:(filter isCmd cmd')
-          printIt = map (("putStrLn $ "++) . show . chomp) cmd
-          askIt = "Ask.ask $ \n"++ unlines (map (ind 3) cmd)
-      in sI tl (askIt:(reverse printIt++mn)) rest
-  sI tl mn (ln:lns) = sI tl (("putStrLn "++show ln):mn) lns
-  isComment ('-':'-':_) = True
-  isComment s = False
-  isCmd ('=':'>':_) = True
+  sI tl mn (ln@('>':_):lns) = 
+      let (cmd',rest) = span isCode lns
+          cmd = map (drop 2) $ ln:cmd'
+      in sI (reverse cmd ++ tl) (("Ask.printCode "++ show cmd):mn) rest
+
+  sI tl mn (ln@('?':'>':_):lns) = 
+      let (cmd',rest) = span (isCmd ) lns
+          cmd = map (drop 2) $ ln:cmd'
+          printIt = show $ map (chomp) cmd
+          askIt = "Ask.ask "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
+      in sI tl (askIt:mn) rest
+  sI tl mn (ln:lns) | "\\begin{code}" `isPrefixOf` ln = 
+                        let (cmds,_:rest) = span (not . ("\\end{code}" `isPrefixOf`)) lns
+                        in sI (reverse cmds ++ tl) (("Ask.printCode "++ show cmds):mn) rest
+                    | otherwise = 
+                        let (txt,rest) = span isText lns
+                        in sI tl (("Ask.printText "++ show (ln:txt)):mn) rest
+  isCmd ('?':'>':_) = True
   isCmd s = False
-  isCmdOrComment s = isCmd s || isComment s
+  isCode ('>':' ':_) = True
+  isCode _ = False
+  isText s = not $ take 2 s `elem` ["> ", ">>", "?>", "\\b", "\\e"]
+
+--  sI tl mn (('~':'>':ln):lns) = sI tl (("putStrLn $ "++withEq ln++"++show ("++chomp ln++")"):mn) lns
+
+p1 .||. p2 = \x -> p1 x || p2 x
 
 inoutxform = filter (not . isSink) . addMain . map transSrc   
 

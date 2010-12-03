@@ -8,22 +8,31 @@ let's see if we can define a function
 
 > long_variable = 5
 
-> f :: Int -> Int
+> f,g :: Int -> Int
 
-> f x = x+1+ long_variable + long_variable + long_variable + 
->       long_variable + long_variable + long_variable + long_variable 
+here is a fairly
+long paragraph of text
+but i can't type so much because
+it's getting late
+
+> f x = x+1+ long_variable + long_variable + long_variable +
+>       long_variable + long_variable + long_variable + long_variable
+
+\begin{code}
+g x = x-1
+\end{code}
 
 > fl <* readFile "inliterate.cabal"
 
 and then calculate something
 
-=> f 4
+?> f 4
 
-=> f (1+1+1+1+1+1)
+?> f (1+1+1+1+1+1)
 
-=> f 
-=>   (1+1+1+1+1+1)
+?> f 
+?>   (1+1+1+1+1+1)
 
-=> fl
+?> g 6
 
 thats all folks
