@@ -16,11 +16,11 @@ onDecls f (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 v6 $ f decls
 setModuleName s (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 (ModuleName s) v3 v4 v5 v6 decls
 
 
-addImport m (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 (v6++[m]) decls
-
-impUnsafe = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, importModule = ModuleName "System.IO.Unsafe", importQualified = True, importSrc = False, importPkg = Nothing, importAs = Just (ModuleName "SysIOUnface"), importSpecs = Nothing}
-
-impAsk = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, importModule = ModuleName "Ask", importQualified = True, importSrc = False, importPkg = Nothing, importAs = Just (ModuleName "Ask"), importSpecs = Nothing}
+addImport nm q (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 (v6++[m]) decls 
+  where m = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, 
+                        importModule = ModuleName nm, 
+                        importQualified = True, importSrc = False, importPkg = Nothing, 
+                        importAs = Just (ModuleName q), importSpecs = Nothing}
 
 maySink (SpliceDecl sloc (InfixApp (var)
  (QVarOp (UnQual (Symbol "*>"))) sink)) = Just (sloc, var,sink)
@@ -60,20 +60,25 @@ splitInlit = sI [] [] where
   sI tl mn (ln@('>':_):lns) = 
       let (cmd',rest) = span isCode lns
           cmd = map (drop 2) $ ln:cmd'
-      in sI (reverse cmd ++ tl) (("Ask.printCode "++ show cmd):mn) rest
+      in sI (reverse cmd ++ tl) (("Ask.printCode theOutputMode "++ show cmd):mn) rest
 
   sI tl mn (ln@('?':'>':_):lns) = 
       let (cmd',rest) = span (isCmd ) lns
           cmd = map (drop 2) $ ln:cmd'
           printIt = show $ map (chomp) cmd
-          askIt = "Ask.ask "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
+          askIt = "Ask.ask theOutputMode "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
       in sI tl (askIt:mn) rest
   sI tl mn (ln:lns) | "\\begin{code}" `isPrefixOf` ln = 
                         let (cmds,_:rest) = span (not . ("\\end{code}" `isPrefixOf`)) lns
-                        in sI (reverse cmds ++ tl) (("Ask.printCode "++ show cmds):mn) rest
+                        in sI (reverse cmds ++ tl) 
+                              (("Ask.printCode theOutputMode "++ show cmds):mn) rest
+                    | "\\begin{eval}" `isPrefixOf` ln = 
+                        let (cmds,_:rest) = span (not . ("\\end{eval}" `isPrefixOf`)) lns
+                        in sI tl (("Ask.ask theOutputMode "++ show cmds++" $ \n"++ 
+                                   unlines (map (ind 5) cmds)):mn) rest
                     | otherwise = 
                         let (txt,rest) = span isText lns
-                        in sI tl (("Ask.printText "++ show (ln:txt)):mn) rest
+                        in sI tl (("Ask.printText theOutputMode "++ show (ln:txt)):mn) rest
   isCmd ('?':'>':_) = True
   isCmd s = False
   isCode ('>':' ':_) = True

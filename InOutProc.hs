@@ -12,6 +12,6 @@ main = do
   original:src:out:_ <- getArgs
   mmod <- fromParseResult `fmap` parseFile src
   --(print) $  mmod
-  writeFile out $ prettyPrint $ addImport impUnsafe $ onDecls inoutxform mmod
+  writeFile out $ prettyPrint $ addImport "System.IO.Unsafe" "SysIOUnface"  $ onDecls inoutxform mmod
 
  

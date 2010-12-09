@@ -14,7 +14,7 @@ Library
 Executable inoutproc
 --   Hs-source-dirs:   prog
    Main-Is:          InOutProc.hs
-   Build-depends:    haskell-src-exts, pretty, base>=4
+   Build-depends:    haskell-src-exts, pretty, base>=4, bugpan
    other-modules:    InOut
 
 

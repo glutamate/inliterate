@@ -35,4 +35,9 @@ and then calculate something
 
 ?> g 6
 
+\begin{eval}
+g
+  5
+\end{eval}
+
 thats all folks
