@@ -12,6 +12,7 @@ import System.Process
 import Control.Monad
 import Data.List
 import System.Exit
+import Ask
 
 splitByHyphen :: [String] -> ([String], [String])
 splitByHyphen = partition f where
@@ -36,15 +37,39 @@ getMode =
     "                        _ | \"--lhs2tex\" `elem` args -> Ask.Lhs2TeX",
     "                          | otherwise -> Ask.Text"]
 
+getoutmode lines opts 
+    | "--latex" `elem` opts = LaTeX
+    | "--lhs2tex" `elem` opts = Lhs2TeX
+    | "--html" `elem` opts = HTML
+    | "--text" `elem` opts = Text
+    | any ("<!DOCTYPE" `isPrefixOf`) (take 5 lines) = HTML
+    | any ("%include" `isPrefixOf`) (take 5 lines) = Lhs2TeX
+    | any ("\\documentclass" `isPrefixOf`) (take 5 lines) = LaTeX
+    | otherwise = Text
+
+modeRunCmds LaTeX nm = do
+            system ("./"++nm++" >"++nm++".tex")
+            system $ "pdflatex "++nm
+modeRunCmds Lhs2TeX nm = do
+            system ("./"++nm++" >"++nm++".lhs")
+            system $ "lhs2TeX --math -o "++nm++".tex "++nm++".lhs"
+            system $ "pdflatex "++nm
+modeRunCmds HTML nm = system ("./"++nm++" >"++nm++".html")
+modeRunCmds Text nm = system ("./"++nm)
+
 main = do
   (src:rest, opts) <- splitByHyphen `fmap` getArgs
-  (bd, mn) <- (splitInlit . (nmr:) . (th:) . lines) `fmap` readFile src
+  fileLines <- fmap lines $ readFile src
+  (bd, mn) <- return $ (splitInlit . (nmr:) . (th:)) fileLines
   --mmod <- fromParseResult `fmap` parseFile src
   --(print) $  mmod
+  let outmode = getoutmode fileLines opts
   let out = case rest of 
               o:_ -> o
               [] -> beforePeriod src ++ ".hs"
-  let codeIn = unlines $ bd ++ ["main = do"] ++ (map ("   "++) (getMode++mn)) 
+  let codeIn = unlines $ bd ++ ["main = do"] ++ 
+                         (map ("   "++) (mn)) ++ 
+                         ["theOutputMode = Ask."++show outmode]
 
   codeOut <- case  parseFileContents codeIn of
      ParseFailed _ err -> do putStr codeIn
@@ -59,10 +84,10 @@ main = do
   let runOpts = filter (`elem` runPossibleOpts) opts
   when ("--make" `elem` opts || "--run" `elem` opts) $ do
          ec <- system ("ghc --make "++out++" "++intercalate " " ghcOpts)
-         when (ec == ExitSuccess && "--run" `elem` opts) $ 
-              system ("./"++beforePeriod out++" "++intercalate " " runOpts) >> return ()
---runProcess (beforePeriod out) [] Nothing Nothing Nothing Nothing Nothing >> return ()
--- prettyPrint $ addImport impUnsafe $ onDecls transform mmod
+         when (ec == ExitSuccess && "--run" `elem` opts) $ do               
+              modeRunCmds outmode $ beforePeriod out
+              return ()
+
 
  
 --todo: create pandoc

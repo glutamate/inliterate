@@ -6,7 +6,7 @@ import PlotGnuplot
 import Data.Unique
 import System.Cmd
 
-data OutputMode = HTML | LaTeX | Text | Lhs2TeX
+data OutputMode = HTML | LaTeX | Text | Lhs2TeX deriving Show
 
 class Ask a where
    askInlit :: OutputMode -> a -> IO (Bool, String)
@@ -62,17 +62,32 @@ instance Ask PlotDims where
 
 ask :: Ask a => OutputMode -> [String] -> a -> IO ()
 ask om ss x = do
-  mapM_ (putStrLn . ("?> "++)) ss
+  --mapM_ (putStrLn . ("?> "++)) ss
+  printCode om ss
   (isImage, s) <- askInlit om x
-  if isImage then putStrLn s else putStrLn $ "=> "++s
+  if isImage 
+     then putStrLn s 
+     else printCode om ["=> "++s]
 
 printCode :: OutputMode -> [String] -> IO ()
-printCode _ = mapM_ (putStrLn . ("> "++))
+printCode LaTeX ss = do
+  putStrLn "\\begin{verb}"
+  mapM_ putStrLn ss
+  putStrLn "\\end{verb}"
+printCode Lhs2TeX ss = do
+  putStrLn "\\begin{code}"
+  mapM_ putStrLn ss
+  putStrLn "\\end{code}"
+printCode HTML ss = do
+  putStrLn "<pre>"
+  mapM_ putStrLn ss
+  putStrLn "</pre>"
+printCode _ ss = mapM_ (putStrLn . ("> "++)) ss
 
 printText :: OutputMode -> [String] -> IO ()
 printText _ [""] = do
   putStrLn ""
 printText HTML ss = do
-  putStr "<p>" >> mapM_ putStrLn ss >> putStrLn "</p>" 
+  putStrLn "<p>" >> mapM_ putStrLn ss >> putStrLn "</p>" 
 printText _ ss = do
   putStrLn "" >> mapM_ putStrLn ss >> putStrLn "" 
