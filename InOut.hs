@@ -51,7 +51,7 @@ chomp s = s
  
 withEq s = init (show $ chomp s)++"\\n  =>  \""
 
-
+ 
 splitInlit :: [String] -> ([String],[String])
 splitInlit = sI [] [] where
   sI tl mn [] = (reverse tl,
@@ -60,25 +60,25 @@ splitInlit = sI [] [] where
   sI tl mn (ln@('>':_):lns) = 
       let (cmd',rest) = span isCode lns
           cmd = map (drop 2) $ ln:cmd'
-      in sI (reverse cmd ++ tl) (("Ask.printCode theOutputMode "++ show cmd):mn) rest
+      in sI (reverse cmd ++ tl) (("Ask.printCode "++ show cmd):mn) rest
 
   sI tl mn (ln@('?':'>':_):lns) = 
       let (cmd',rest) = span (isCmd ) lns
           cmd = map (drop 2) $ ln:cmd'
           printIt = show $ map (chomp) cmd
-          askIt = "Ask.ask theOutputMode "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
+          askIt = "Ask.ask "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
       in sI tl (askIt:mn) rest
   sI tl mn (ln:lns) | "\\begin{code}" `isPrefixOf` ln = 
                         let (cmds,_:rest) = span (not . ("\\end{code}" `isPrefixOf`)) lns
                         in sI (reverse cmds ++ tl) 
-                              (("Ask.printCode theOutputMode "++ show cmds):mn) rest
+                              (("Ask.printCode "++ show cmds):mn) rest
                     | "\\begin{eval}" `isPrefixOf` ln = 
                         let (cmds,_:rest) = span (not . ("\\end{eval}" `isPrefixOf`)) lns
-                        in sI tl (("Ask.ask theOutputMode "++ show cmds++" $ \n"++ 
+                        in sI tl (("Ask.ask "++ show cmds++" $ \n"++ 
                                    unlines (map (ind 5) cmds)):mn) rest
                     | otherwise = 
                         let (txt,rest) = span isText lns
-                        in sI tl (("Ask.printText theOutputMode "++ show (ln:txt)):mn) rest
+                        in sI tl (("putStrLn "++ show (ln:txt)):mn) rest
   isCmd ('?':'>':_) = True
   isCmd s = False
   isCode ('>':' ':_) = True

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, GADTs #-}
 
 module Ask where
 
@@ -6,28 +6,32 @@ import PlotGnuplot
 import Data.Unique
 import System.Cmd
 
-data OutputMode = HTML | LaTeX | Text | Lhs2TeX deriving Show
+--data OutputMode = HTML | LaTeX | Text | Lhs2TeX deriving Show
 
 class Ask a where
-   askInlit :: OutputMode -> a -> IO (Bool, String)
+   ask ::  [String] -> a -> IO ()
 
 instance Ask Int where
-   askInlit _ x = return $ (False, show x)
+   ask s x = printCode $ s++ ["=> "++show x] --return $ (False, show x)
 
 instance Ask Double where
-   askInlit _ x = return $ (False, show x)
+   ask s x = printCode $ s++["=> "++show x] 
 
 instance Ask [Char] where 
-   askInlit _ s = return (False, s)
+   ask s x = printCode $ s++["=> "++show x]
 
-data PlotDims = PlotDims Int Int Int GnuplotBox
+data PlotDims where
+    PlotDims :: PlotWithGnuplot a => Int -> Int -> Int -> a -> PlotDims
 
 instance Ask GnuplotBox where
-   askInlit om gb= askInlit om (PlotDims 89 127 16 gb)
-       
+   ask s x = ask s (PlotDims 89 127 16 x)
+     
+instance Ask PlotDims where
+   ask = askHtmlPic
+  
 getNm = (('l':) . show . hashUnique) `fmap` newUnique
 
-askLatexPic (PlotDims w h fs (GnuplotBox x))= do
+{-askLatexPic (PlotDims w h fs (GnuplotBox x))= do
       nm<- getNm
       cmd <- multiPlot unitRect x
       let start = "set datafile missing \"NaN\"\n"
@@ -40,8 +44,8 @@ askLatexPic (PlotDims w h fs (GnuplotBox x))= do
       execGP cmds 
       cleanupCmds $ map snd cmd
       return $ (True, "\\includegraphics{"++nm++"}")
-
-askHtmlPic (PlotDims w h fs (GnuplotBox x))= do
+-}
+askHtmlPic s (PlotDims w h fs x) = do
       nm<- getNm
       cmd <- multiPlot unitRect x
       let start = "set datafile missing \"NaN\"\n"
@@ -53,41 +57,20 @@ askHtmlPic (PlotDims w h fs (GnuplotBox x))= do
       let cmds = start++term ++plot1
       execGP cmds 
       cleanupCmds $ map snd cmd
-      return $ (True, "<img src=\""++nm++"\"></img>")
+      putStrLn $ "!["++nm++"]("++nm++" \""++unlines s++"\")"
+-- "<img src=\""++nm++"\"></img>"
 
-instance Ask PlotDims where
-   askInlit LaTeX = askLatexPic
-   askInlit Lhs2TeX = askLatexPic
-   askInlit Text = const $ return (True, "<<PLOT>>")
 
-ask :: Ask a => OutputMode -> [String] -> a -> IO ()
+{-ask :: Ask a => OutputMode -> [String] -> a -> IO ()
 ask om ss x = do
   --mapM_ (putStrLn . ("?> "++)) ss
   printCode om ss
   (isImage, s) <- askInlit om x
   if isImage 
      then putStrLn s 
-     else printCode om ["=> "++s]
+     else printCode om ["=> "++s] -}
 
-printCode :: OutputMode -> [String] -> IO ()
-printCode LaTeX ss = do
-  putStrLn "\\begin{verb}"
-  mapM_ putStrLn ss
-  putStrLn "\\end{verb}"
-printCode Lhs2TeX ss = do
-  putStrLn "\\begin{code}"
-  mapM_ putStrLn ss
-  putStrLn "\\end{code}"
-printCode HTML ss = do
-  putStrLn "<pre>"
-  mapM_ putStrLn ss
-  putStrLn "</pre>"
-printCode _ ss = mapM_ (putStrLn . ("> "++)) ss
+printCode :: [String] -> IO ()
+printCode ss = do
+  putStrLn $ unlines $["~~~~~~{.haskell}"] ++ ss++ ["~~~~~~"]
 
-printText :: OutputMode -> [String] -> IO ()
-printText _ [""] = do
-  putStrLn ""
-printText HTML ss = do
-  putStrLn "<p>" >> mapM_ putStrLn ss >> putStrLn "</p>" 
-printText _ ss = do
-  putStrLn "" >> mapM_ putStrLn ss >> putStrLn "" 

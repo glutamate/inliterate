@@ -4,6 +4,7 @@ import Language.Haskell.Exts
 --import Language.Haskell.Exts.Pretty
 import Data.Maybe
 import System.Environment
+import System.Directory
 import Text.PrettyPrint
 import Data.List
 import InOut
@@ -29,7 +30,7 @@ nmr = ">> {-# LANGUAGE NoMonomorphismRestriction #-}"
 
 nl s = s++"\n"
 
-getMode = 
+{-getMode = 
    ["theOutputMode <- do args <- SysEnv.getArgs",
     "                    return $ case args of",
     "                        _ | \"--html\" `elem` args -> Ask.HTML",
@@ -56,6 +57,17 @@ modeRunCmds Lhs2TeX nm = do
             system $ "pdflatex "++nm
 modeRunCmds HTML nm = system ("./"++nm++" >"++nm++".html")
 modeRunCmds Text nm = system ("./"++nm)
+-}
+
+changeExt fnm ext = takeWhile (/='.') fnm ++ "."++ext
+
+runCmds nm = do
+  system $ ("./"++nm++" >"++nm++".md")
+  syn<- doesFileExist "syntax.css"
+  if syn 
+     then system $ "pandoc -o "++changeExt nm "html" ++ " -c syntax.css "++changeExt nm "md"
+     else system $ "pandoc -o "++changeExt nm "html" ++ " "++changeExt nm "md"
+
 
 main = do
   (src:rest, opts) <- splitByHyphen `fmap` getArgs
@@ -63,13 +75,12 @@ main = do
   (bd, mn) <- return $ (splitInlit . (nmr:) . (th:)) fileLines
   --mmod <- fromParseResult `fmap` parseFile src
   --(print) $  mmod
-  let outmode = getoutmode fileLines opts
+  --let outmode = getoutmode fileLines opts
   let out = case rest of 
               o:_ -> o
               [] -> beforePeriod src ++ ".hs"
   let codeIn = unlines $ bd ++ ["main = do"] ++ 
-                         (map ("   "++) (mn)) ++ 
-                         ["theOutputMode = Ask."++show outmode]
+                         (map ("   "++) (mn)) 
 
   codeOut <- case  parseFileContents codeIn of
      ParseFailed _ err -> do putStr codeIn
@@ -79,13 +90,13 @@ main = do
                              setModuleName "Main" $ onDecls inxform $ ast
   writeFile out codeOut
   let inlitOpts = ["--make","--run"]
-  let runPossibleOpts = ["--html","--latex", "--lhs2tex"]
+  let runPossibleOpts = [] -- "--html","--latex", "--lhs2tex"]
   let ghcOpts = opts \\ (inlitOpts++runPossibleOpts)
   let runOpts = filter (`elem` runPossibleOpts) opts
-  when ("--make" `elem` opts || "--run" `elem` opts) $ do
-         ec <- system ("ghc --make "++out++" "++intercalate " " ghcOpts)
-         when (ec == ExitSuccess && "--run" `elem` opts) $ do               
-              modeRunCmds outmode $ beforePeriod out
+  --when ("--make" `elem` opts || "--run" `elem` opts) $ do
+  ec <- system ("ghc --make "++out++" "++intercalate " " ghcOpts)
+  when (ec == ExitSuccess {-&& "--run" `elem` opts -}) $ do               
+              runCmds $ beforePeriod out
               return ()
 
 
