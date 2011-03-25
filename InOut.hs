@@ -19,8 +19,13 @@ setModuleName s (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 (ModuleName s) v3 
 addImport nm q (Module  v1 v2 v3 v4 v5 v6 decls) = Module v1 v2 v3 v4 v5 (v6++[m]) decls 
   where m = ImportDecl {importLoc = SrcLoc {srcFilename = "TestSinks.hs", srcLine = 7, srcColumn = 1}, 
                         importModule = ModuleName nm, 
-                        importQualified = True, importSrc = False, importPkg = Nothing, 
-                        importAs = Just (ModuleName q), importSpecs = Nothing}
+                        importQualified = qualB q, importSrc = False, importPkg = Nothing, 
+                        importAs = qualM q, importSpecs = Nothing}
+        qualM "" = Nothing
+        qualM s = Just (ModuleName q)
+        qualB "" = False
+        qualB s = True
+        
 
 maySink (SpliceDecl sloc (InfixApp (var)
  (QVarOp (UnQual (Symbol "*>"))) sink)) = Just (sloc, var,sink)
@@ -60,25 +65,25 @@ splitInlit = sI [] [] where
   sI tl mn (ln@('>':_):lns) = 
       let (cmd',rest) = span isCode lns
           cmd = map (drop 2) $ ln:cmd'
-      in sI (reverse cmd ++ tl) (("Ask.printCode "++ show cmd):mn) rest
+      in sI (reverse cmd ++ tl) (("inlitPrintCode "++ show cmd):mn) rest
 
   sI tl mn (ln@('?':'>':_):lns) = 
       let (cmd',rest) = span (isCmd ) lns
           cmd = map (drop 2) $ ln:cmd'
           printIt = show $ map (chomp) cmd
-          askIt = "Ask.ask "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
+          askIt = "inlitAsk "++printIt++" $ \n"++ unlines (map (ind 3) cmd)
       in sI tl (askIt:mn) rest
   sI tl mn (ln:lns) | "\\begin{code}" `isPrefixOf` ln = 
                         let (cmds,_:rest) = span (not . ("\\end{code}" `isPrefixOf`)) lns
                         in sI (reverse cmds ++ tl) 
-                              (("Ask.printCode "++ show cmds):mn) rest
+                              (("inlitPrintCode "++ show cmds):mn) rest
                     | "\\begin{eval}" `isPrefixOf` ln = 
                         let (cmds,_:rest) = span (not . ("\\end{eval}" `isPrefixOf`)) lns
-                        in sI tl (("Ask.ask "++ show cmds++" $ \n"++ 
+                        in sI tl (("inlitAsk "++ show cmds++" $ \n"++ 
                                    unlines (map (ind 5) cmds)):mn) rest
                     | otherwise = 
                         let (txt,rest) = span isText lns
-                        in sI tl (("putStrLn "++ show (ln:txt)):mn) rest
+                        in sI tl (("mapM putStrLn "++ show (ln:txt)):mn) rest
   isCmd ('?':'>':_) = True
   isCmd s = False
   isCode ('>':' ':_) = True

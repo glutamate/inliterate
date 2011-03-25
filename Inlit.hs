@@ -13,7 +13,6 @@ import System.Process
 import Control.Monad
 import Data.List
 import System.Exit
-import Ask
 
 splitByHyphen :: [String] -> ([String], [String])
 splitByHyphen = partition f where
@@ -63,10 +62,13 @@ changeExt fnm ext = takeWhile (/='.') fnm ++ "."++ext
 
 runCmds nm = do
   system $ ("./"++nm++" >"++nm++".md")
-  syn<- doesFileExist "syntax.css"
+  syn<- doesFileExist "style.css"
+  synUp<- doesFileExist "../style.css"
   if syn 
-     then system $ "pandoc -o "++changeExt nm "html" ++ " -c syntax.css "++changeExt nm "md"
-     else system $ "pandoc -o "++changeExt nm "html" ++ " "++changeExt nm "md"
+     then system $ "pandoc -o "++changeExt nm "html" ++ " -c style.css "++changeExt nm "md"
+     else if synUp
+             then system $ "pandoc -o "++changeExt nm "html" ++ " -c ../style.css "++changeExt nm "md"
+             else system $ "pandoc -o "++changeExt nm "html" ++ " "++changeExt nm "md"
 
 
 main = do
@@ -86,7 +88,7 @@ main = do
      ParseFailed _ err -> do putStr codeIn
                              fail $ "Parse Failure"++err
      ParseOk ast -> return $ (nl pass++) $ prettyPrint $ addImport "System.IO.Unsafe" "SysIOUnface" $ 
-                             addImport "Ask" "Ask" $ addImport "System.Environment" "SysEnv" $
+                             addImport "Ask" "" $ addImport "Graphics.Gnewplot.Instances" "GnewInst" $ addImport "System.Environment" "SysEnv" $
                              setModuleName "Main" $ onDecls inxform $ ast
   writeFile out codeOut
   let inlitOpts = ["--make","--run"]

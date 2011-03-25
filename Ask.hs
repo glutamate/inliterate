@@ -2,34 +2,53 @@
 
 module Ask where
 
-import PlotGnuplot
+import Graphics.Gnewplot.Exec
+import Graphics.Gnewplot.Types
 import Data.Unique
 import System.Cmd
 
 --data OutputMode = HTML | LaTeX | Text | Lhs2TeX deriving Show
 
 class Ask a where
-   ask ::  [String] -> a -> IO ()
+   inlitAsk ::  [String] -> a -> IO ()
 
 instance Ask Int where
-   ask s x = printCode $ s++ ["=> "++show x] --return $ (False, show x)
+   inlitAsk s x = inlitPrintCode $ s++ ["=> "++show x] --return $ (False, show x)
 
 instance Ask Double where
-   ask s x = printCode $ s++["=> "++show x] 
+   inlitAsk s x = inlitPrintCode $ s++["=> "++show x] 
 
 instance Ask [Char] where 
-   ask s x = printCode $ s++["=> "++show x]
+   inlitAsk s x = inlitPrintCode $ s++["=> "++show x]
 
 data PlotDims where
     PlotDims :: PlotWithGnuplot a => Int -> Int -> Int -> a -> PlotDims
 
+plot x = GnuplotBox x
+
 instance Ask GnuplotBox where
-   ask s x = ask s (PlotDims 89 127 16 x)
+   inlitAsk s x = inlitAsk s (PlotDims 700 450 12 x)
      
 instance Ask PlotDims where
-   ask = askHtmlPic
+   inlitAsk s (PlotDims w h fs x) = do
+      nm<- (('l':) . show . hashUnique) `fmap` newUnique
+      cmd <- multiPlot unitRect x
+      let start = "set datafile missing \"NaN\"\n"
+      let term = "set terminal png font \"Helvetica,"
+                 ++show fs++"\" size "++ show w++","
+                 ++show h++"\n"-- crop\n"
+      let plot1 = "set output '"++nm++".png'\n"++
+                               (showMultiPlot cmd)
+      let cmds = start++term ++plot1
+      execGP cmds 
+      cleanupCmds $ map snd cmd
+      let addPrompt (s:ss) = ("?> "++s):ss
+          addPrompt []= []
+      inlitPrintCode $ s
+      putStrLn $ "!["++unlines s++"]("++nm++".png)"
+   
   
-getNm = (('l':) . show . hashUnique) `fmap` newUnique
+--getNm = (('l':) . show . hashUnique) `fmap` newUnique
 
 {-askLatexPic (PlotDims w h fs (GnuplotBox x))= do
       nm<- getNm
@@ -45,8 +64,8 @@ getNm = (('l':) . show . hashUnique) `fmap` newUnique
       cleanupCmds $ map snd cmd
       return $ (True, "\\includegraphics{"++nm++"}")
 -}
-askHtmlPic s (PlotDims w h fs x) = do
-      nm<- getNm
+{-askHtmlPic s (PlotDims w h fs x) = do
+      nm<- (('l':) . show . hashUnique) `fmap` newUnique
       cmd <- multiPlot unitRect x
       let start = "set datafile missing \"NaN\"\n"
       let term = "set terminal png font \"Helvetica,"
@@ -57,7 +76,7 @@ askHtmlPic s (PlotDims w h fs x) = do
       let cmds = start++term ++plot1
       execGP cmds 
       cleanupCmds $ map snd cmd
-      putStrLn $ "!["++nm++"]("++nm++" \""++unlines s++"\")"
+      putStrLn $ "!["++nm++"]("++nm++".png \""++concat s++"\")" -}
 -- "<img src=\""++nm++"\"></img>"
 
 
@@ -70,7 +89,7 @@ ask om ss x = do
      then putStrLn s 
      else printCode om ["=> "++s] -}
 
-printCode :: [String] -> IO ()
-printCode ss = do
+inlitPrintCode :: [String] -> IO ()
+inlitPrintCode ss = do
   putStrLn $ unlines $["~~~~~~{.haskell}"] ++ ss++ ["~~~~~~"]
 

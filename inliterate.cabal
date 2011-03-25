@@ -11,16 +11,16 @@ Cabal-Version: 	     >= 1.2
 Library
    Exposed-modules:  Ask
 
-Executable inoutproc
+--Executable inoutproc
 --   Hs-source-dirs:   prog
-   Main-Is:          InOutProc.hs
-   Build-depends:    haskell-src-exts, pretty, base>=4, bugpan
-   other-modules:    InOut
+--   Main-Is:          InOutProc.hs
+--   Build-depends:    haskell-src-exts, pretty, base>=4, bugpan
+--   other-modules:    InOut
 
 
 Executable inlit
 --   Hs-source-dirs:   prog
    Main-Is:          Inlit.hs
-   Build-depends:    haskell-src-exts, pretty, base>=4, process
+   Build-depends:    haskell-src-exts, pretty, base>=4, process, directory, gnewplot
    other-modules:    InOut
 
