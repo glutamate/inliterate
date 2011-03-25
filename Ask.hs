@@ -6,6 +6,7 @@ import Graphics.Gnewplot.Exec
 import Graphics.Gnewplot.Types
 import Data.Unique
 import System.Cmd
+import System.Random
 
 --data OutputMode = HTML | LaTeX | Text | Lhs2TeX deriving Show
 
@@ -31,7 +32,7 @@ instance Ask GnuplotBox where
      
 instance Ask PlotDims where
    inlitAsk s (PlotDims w h fs x) = do
-      nm<- (('l':) . show . hashUnique) `fmap` newUnique
+      nm  <- (('l':) . show . round . (*(100000::Double))) `fmap` randomIO
       cmd <- multiPlot unitRect x
       let start = "set datafile missing \"NaN\"\n"
       let term = "set terminal png font \"Helvetica,"

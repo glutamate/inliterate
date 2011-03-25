@@ -62,6 +62,8 @@ changeExt fnm ext = takeWhile (/='.') fnm ++ "."++ext
 
 runCmds nm = do
   system $ ("./"++nm++" >"++nm++".md")
+  args <-getArgs
+  when ("--nopandoc" `elem` args) $ exitSuccess
   syn<- doesFileExist "style.css"
   synUp<- doesFileExist "../style.css"
   if syn 
@@ -91,7 +93,7 @@ main = do
                              addImport "Ask" "" $ addImport "Graphics.Gnewplot.Instances" "GnewInst" $ addImport "System.Environment" "SysEnv" $
                              setModuleName "Main" $ onDecls inxform $ ast
   writeFile out codeOut
-  let inlitOpts = ["--make","--run"]
+  let inlitOpts = ["--nopandoc"]
   let runPossibleOpts = [] -- "--html","--latex", "--lhs2tex"]
   let ghcOpts = opts \\ (inlitOpts++runPossibleOpts)
   let runOpts = filter (`elem` runPossibleOpts) opts
