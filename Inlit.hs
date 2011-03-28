@@ -98,7 +98,7 @@ main = do
   let ghcOpts = opts \\ (inlitOpts++runPossibleOpts)
   let runOpts = filter (`elem` runPossibleOpts) opts
   --when ("--make" `elem` opts || "--run" `elem` opts) $ do
-  ec <- system ("ghc --make "++out++" "++intercalate " " ghcOpts)
+  ec <- system ("ghc --make -package inliterate -package gnewplot "++out++" "++intercalate " " ghcOpts)
   when (ec == ExitSuccess {-&& "--run" `elem` opts -}) $ do               
               runCmds $ beforePeriod out
               return ()
